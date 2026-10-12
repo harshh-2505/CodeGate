@@ -4,3 +4,7 @@ dist/
 *.db-*
 .env
 *.tsbuildinfo
+
+.vercel
+.env*
+!.env.example

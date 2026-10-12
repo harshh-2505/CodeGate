@@ -1,7 +1,7 @@
 import { app } from './app.js';
 import { seedIfEmpty } from './seed.js';
 
-seedIfEmpty();
+await seedIfEmpty();
 
 const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => {

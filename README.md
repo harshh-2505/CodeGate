@@ -6,12 +6,15 @@
 
 Your pass stays encrypted until one hour before doors open, and resale happens in the open.
 
+### [▶ Try it live: codegate-coral.vercel.app](https://codegate-coral.vercel.app)
+
 ![React](https://img.shields.io/badge/React_19-0c0e10?style=for-the-badge&logo=react&logoColor=c8ff2e)
 ![TypeScript](https://img.shields.io/badge/TypeScript-0c0e10?style=for-the-badge&logo=typescript&logoColor=c8ff2e)
 ![Vite](https://img.shields.io/badge/Vite-0c0e10?style=for-the-badge&logo=vite&logoColor=c8ff2e)
 ![Tailwind](https://img.shields.io/badge/Tailwind_v4-0c0e10?style=for-the-badge&logo=tailwindcss&logoColor=c8ff2e)
 ![Express](https://img.shields.io/badge/Express_5-0c0e10?style=for-the-badge&logo=express&logoColor=c8ff2e)
-![SQLite](https://img.shields.io/badge/SQLite-0c0e10?style=for-the-badge&logo=sqlite&logoColor=c8ff2e)
+![Turso](https://img.shields.io/badge/Turso_(libSQL)-0c0e10?style=for-the-badge&logo=turso&logoColor=c8ff2e)
+![Vercel](https://img.shields.io/badge/Live_on_Vercel-0c0e10?style=for-the-badge&logo=vercel&logoColor=c8ff2e)
 
 ![CodeGate home page](docs/screenshots/home.png)
 
@@ -31,21 +34,21 @@ Your pass stays encrypted until one hour before doors open, and resale happens i
 
 ## ⚡ Quick start
 
-You only need **Node.js 22+**. There's no database to install: CodeGate uses a single SQLite file that's created and filled with demo data on first run.
-
-```bash
-git clone https://github.com/harshh-2505/CodeGate.git
-cd CodeGate
-npm install
-npm run dev
-```
-
-Then open **http://localhost:5173** and log in with a demo account (the login page has one-click buttons for these):
+**Use it online:** open **[https://codegate-coral.vercel.app](https://codegate-coral.vercel.app)** and log in with a demo account. The login page has one-click buttons for these:
 
 | Role | Email | Password |
 |---|---|---|
 | 🎧 Customer | `customer@codegate.com` | `password123` |
 | 🛠️ Organizer | `organizer@codegate.com` | `password123` |
+
+**Run it on your machine:** you only need **Node.js 22+**. Locally, CodeGate uses a SQLite file that's created and filled with demo data on first run, so there's no database to install.
+
+```bash
+git clone https://github.com/harshh-2505/CodeGate.git
+cd CodeGate
+npm install
+npm run dev               # then open the address it prints (port 5173)
+```
 
 ---
 
@@ -116,8 +119,10 @@ CodeGate/
 ├── server/                 Node + Express 5 + TypeScript
 │   └── src/
 │       ├── routes/         auth, events, tickets, resale
-│       ├── db.ts           SQLite schema (better-sqlite3)
+│       ├── db.ts           database client + schema (libSQL / Turso)
 │       └── seed.ts         demo data
+├── api/index.mjs           Vercel serverless entry (wraps the Express app)
+├── vercel.json             Vercel build + routing config
 ├── docs/screenshots/       the images in this README
 └── legacy/                 the original single-file React + PHP version
 ```
@@ -127,7 +132,7 @@ CodeGate/
 | UI | React 19, React Router 7, Tailwind CSS v4, Motion, Lucide icons, `qrcode.react` |
 | Data | TanStack Query (caching, refetching), a typed fetch client |
 | API | Express 5, Zod validation, JWT auth, bcrypt password hashing |
-| Storage | SQLite via `better-sqlite3` (one file, no server) |
+| Storage | libSQL via `@libsql/client`: a local SQLite file in development, a hosted [Turso](https://turso.tech) database in production |
 
 **Security:** the server identifies users from their login token, never from IDs the browser sends. Customers can only resell their own passes, only organizers can create events, and a resale purchase transfers ownership in a single database transaction.
 
@@ -143,15 +148,16 @@ CodeGate/
 | `npm run seed` | Wipes the database and reloads the demo data |
 | `npm run typecheck` | Type-checks everything |
 
-### Running in production
+### Deployment
 
-```bash
-cp .env.example .env      # then set JWT_SECRET to a long random string
-npm run build
-npm start                 # app and API on http://localhost:4000
-```
+The live site runs on **[Vercel](https://codegate-coral.vercel.app)**:
 
-The server won't start in production without a `JWT_SECRET`.
+- `npm run build` builds the React app into `client/dist`, which Vercel serves from its CDN.
+- Every `/api/*` request goes to one serverless function (`api/index.mjs`) that runs the Express app.
+- Data lives in a **Turso** database connected through the Vercel Marketplace, which provides `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`.
+- `JWT_SECRET` is set as a secret environment variable on the project. The server won't start in production without it.
+
+To self-host instead, copy `.env.example` to `.env`, fill it in, then `npm run build && npm start`.
 
 ---
 

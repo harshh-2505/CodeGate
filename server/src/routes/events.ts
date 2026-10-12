@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../auth.js';
-import { db, toEvent, type EventRow } from '../db.js';
+import { all, get, run, toEvent, type EventRow } from '../db.js';
 import { HttpError } from '../errors.js';
 
 export const eventsRouter = Router();
@@ -10,11 +10,7 @@ const SELECT_EVENT = `
   SELECT e.*, u.name AS organizer_name
   FROM events e JOIN users u ON u.id = e.organizer_id`;
 
-const listEvents = db.prepare<[], EventRow>(`${SELECT_EVENT} ORDER BY e.date, e.time`);
-const getEvent = db.prepare<[number], EventRow>(`${SELECT_EVENT} WHERE e.id = ?`);
-const insertEvent = db.prepare(`
-  INSERT INTO events (name, date, time, location, description, price, organizer_id, image, tags, is_featured)
-  VALUES (@name, @date, @time, @location, @description, @price, @organizerId, @image, @tags, 0)`);
+const getEvent = (id: number) => get<EventRow>(`${SELECT_EVENT} WHERE e.id = ?`, [id]);
 
 const eventSchema = z.object({
   name: z.string().trim().min(1, 'Event name is required.'),
@@ -27,29 +23,24 @@ const eventSchema = z.object({
   image: z.string().url().optional(),
 });
 
-eventsRouter.get('/', (_req, res) => {
-  res.json(listEvents.all().map(toEvent));
+eventsRouter.get('/', async (_req, res) => {
+  const rows = await all<EventRow>(`${SELECT_EVENT} ORDER BY e.date, e.time`);
+  res.json(rows.map(toEvent));
 });
 
-eventsRouter.get('/:id', (req, res) => {
-  const row = getEvent.get(Number(req.params.id));
+eventsRouter.get('/:id', async (req, res) => {
+  const row = await getEvent(Number(req.params.id));
   if (!row) throw new HttpError(404, 'Event not found.');
   res.json(toEvent(row));
 });
 
-eventsRouter.post('/', requireAuth('organizer'), (req, res) => {
+eventsRouter.post('/', requireAuth('organizer'), async (req, res) => {
   const body = eventSchema.parse(req.body);
   const image = body.image ?? `https://placehold.co/600x400/6d28d9/ffffff?text=${encodeURIComponent(body.name)}`;
-  const { lastInsertRowid } = insertEvent.run({
-    name: body.name,
-    date: body.date,
-    time: body.time,
-    location: body.location,
-    description: body.description,
-    price: body.price,
-    image,
-    tags: JSON.stringify(body.tags),
-    organizerId: req.user!.id,
-  });
-  res.status(201).json(toEvent(getEvent.get(Number(lastInsertRowid))!));
+  const { lastInsertRowid } = await run(
+    `INSERT INTO events (name, date, time, location, description, price, organizer_id, image, tags, is_featured)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0)`,
+    [body.name, body.date, body.time, body.location, body.description, body.price, req.user!.id, image, JSON.stringify(body.tags)],
+  );
+  res.status(201).json(toEvent((await getEvent(lastInsertRowid))!));
 });

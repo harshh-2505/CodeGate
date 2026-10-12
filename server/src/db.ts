@@ -1,13 +1,28 @@
-import Database from 'better-sqlite3';
+import { createClient, type InArgs } from '@libsql/client';
 import path from 'node:path';
 
-const file = process.env.DATABASE_FILE ?? path.resolve(import.meta.dirname, '..', 'codegate.db');
+// Locally this is a plain SQLite file; in production it points at a hosted libSQL (Turso) database.
+const url =
+  process.env.TURSO_DATABASE_URL ??
+  `file:${process.env.DATABASE_FILE ?? path.resolve(import.meta.dirname, '..', 'codegate.db')}`;
 
-export const db = new Database(file);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+export const db = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
 
-db.exec(`
+export async function all<T>(sql: string, args: InArgs = []): Promise<T[]> {
+  const { rows } = await db.execute({ sql, args });
+  return rows as unknown as T[];
+}
+
+export async function get<T>(sql: string, args: InArgs = []): Promise<T | undefined> {
+  return (await all<T>(sql, args))[0];
+}
+
+export async function run(sql: string, args: InArgs = []) {
+  const { lastInsertRowid, rowsAffected } = await db.execute({ sql, args });
+  return { lastInsertRowid: Number(lastInsertRowid), rowsAffected };
+}
+
+const SCHEMA = `
   CREATE TABLE IF NOT EXISTS users (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
     name          TEXT NOT NULL,
@@ -43,7 +58,14 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_events_date ON events(date);
   CREATE INDEX IF NOT EXISTS idx_tickets_owner ON tickets(owner_id);
   CREATE INDEX IF NOT EXISTS idx_tickets_resale ON tickets(is_for_resale);
-`);
+`;
+
+/** Resolves once the schema exists. Await it before handling requests. */
+export const ready: Promise<void> = (async () => {
+  if (url.startsWith('file:')) await db.execute('PRAGMA journal_mode = WAL');
+  await db.execute('PRAGMA foreign_keys = ON');
+  await db.executeMultiple(SCHEMA);
+})();
 
 export type UserType = 'customer' | 'organizer';
 

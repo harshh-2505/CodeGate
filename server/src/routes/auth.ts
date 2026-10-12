@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth, signToken } from '../auth.js';
-import { db, toPublicUser, type UserRow } from '../db.js';
+import { get, run, toPublicUser, type UserRow } from '../db.js';
 import { HttpError } from '../errors.js';
 
 export const authRouter = Router();
@@ -19,9 +19,8 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required.'),
 });
 
-const findByEmail = db.prepare<[string], UserRow>('SELECT * FROM users WHERE email = ?');
-const findById = db.prepare<[number], UserRow>('SELECT * FROM users WHERE id = ?');
-const insertUser = db.prepare('INSERT INTO users (name, email, password_hash, type) VALUES (?, ?, ?, ?)');
+const findByEmail = (email: string) => get<UserRow>('SELECT * FROM users WHERE email = ?', [email]);
+const findById = (id: number) => get<UserRow>('SELECT * FROM users WHERE id = ?', [id]);
 
 const session = (user: UserRow) => ({
   user: toPublicUser(user),
@@ -30,23 +29,28 @@ const session = (user: UserRow) => ({
 
 authRouter.post('/signup', async (req, res) => {
   const body = signupSchema.parse(req.body);
-  if (findByEmail.get(body.email)) throw new HttpError(409, 'An account with this email already exists.');
+  if (await findByEmail(body.email)) throw new HttpError(409, 'An account with this email already exists.');
   const hash = await bcrypt.hash(body.password, 10);
-  const { lastInsertRowid } = insertUser.run(body.name, body.email, hash, body.type);
-  res.status(201).json(session(findById.get(Number(lastInsertRowid))!));
+  const { lastInsertRowid } = await run('INSERT INTO users (name, email, password_hash, type) VALUES (?, ?, ?, ?)', [
+    body.name,
+    body.email,
+    hash,
+    body.type,
+  ]);
+  res.status(201).json(session((await findById(lastInsertRowid))!));
 });
 
 authRouter.post('/login', async (req, res) => {
   const body = loginSchema.parse(req.body);
-  const user = findByEmail.get(body.email);
+  const user = await findByEmail(body.email);
   if (!user || !(await bcrypt.compare(body.password, user.password_hash))) {
     throw new HttpError(401, 'Incorrect email or password.');
   }
   res.json(session(user));
 });
 
-authRouter.get('/me', requireAuth(), (req, res) => {
-  const user = findById.get(req.user!.id);
+authRouter.get('/me', requireAuth(), async (req, res) => {
+  const user = await findById(req.user!.id);
   if (!user) throw new HttpError(401, 'Your account no longer exists.');
   res.json({ user: toPublicUser(user) });
 });
