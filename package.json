@@ -1,0 +1,15 @@
+{
+  "name": "codegate",
+  "private": true,
+  "workspaces": ["server", "client"],
+  "scripts": {
+    "dev": "concurrently -n server,client -c magenta,cyan \"npm:dev -w server\" \"npm:dev -w client\"",
+    "build": "npm run build -w server && npm run build -w client",
+    "start": "npm start -w server",
+    "seed": "npm run seed -w server",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w client"
+  },
+  "devDependencies": {
+    "concurrently": "9.1.2"
+  }
+}
