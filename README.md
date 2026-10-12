@@ -1,58 +1,171 @@
-# CodeGate
+<div align="center">
 
-A ticketing platform: customers buy event tickets (with a QR code that unlocks an hour before the event) and resell them; organizers list events.
+# ⌖ CODEGATE
 
-## Quick start
+**Secure, fair event ticketing, with QR passes that can't be screenshotted, scalped or faked.**
 
-Requires Node.js 22 or newer. No XAMPP, Apache or MySQL needed.
+Your pass stays encrypted until one hour before doors open, and resale happens in the open.
+
+![React](https://img.shields.io/badge/React_19-0c0e10?style=for-the-badge&logo=react&logoColor=c8ff2e)
+![TypeScript](https://img.shields.io/badge/TypeScript-0c0e10?style=for-the-badge&logo=typescript&logoColor=c8ff2e)
+![Vite](https://img.shields.io/badge/Vite-0c0e10?style=for-the-badge&logo=vite&logoColor=c8ff2e)
+![Tailwind](https://img.shields.io/badge/Tailwind_v4-0c0e10?style=for-the-badge&logo=tailwindcss&logoColor=c8ff2e)
+![Express](https://img.shields.io/badge/Express_5-0c0e10?style=for-the-badge&logo=express&logoColor=c8ff2e)
+![SQLite](https://img.shields.io/badge/SQLite-0c0e10?style=for-the-badge&logo=sqlite&logoColor=c8ff2e)
+
+![CodeGate home page](docs/screenshots/home.png)
+
+</div>
+
+---
+
+## ✦ What it does
+
+| | For fans | For organizers |
+|---|---|---|
+| 🎟️ | Browse events, buy a pass in one click | List events with date, venue, price and tags |
+| 🔒 | QR code stays **blurred and locked** until 1 hour before doors | See every event you've published in one console |
+| 🔁 | Resell a pass you can't use, or buy one from another fan | Cover art is generated automatically for each event |
+
+---
+
+## ⚡ Quick start
+
+You only need **Node.js 22+**. There's no database to install: CodeGate uses a single SQLite file that's created and filled with demo data on first run.
 
 ```bash
+git clone https://github.com/harshh-2505/CodeGate.git
+cd CodeGate
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173. On first run the database is created and seeded with demo data:
+Then open **http://localhost:5173** and log in with a demo account (the login page has one-click buttons for these):
 
-| Account | Email | Password |
-| --- | --- | --- |
-| Organizer | organizer@codegate.com | password123 |
-| Customer | customer@codegate.com | password123 |
+| Role | Email | Password |
+|---|---|---|
+| 🎧 Customer | `customer@codegate.com` | `password123` |
+| 🛠️ Organizer | `organizer@codegate.com` | `password123` |
 
-## Scripts
+---
+
+## 🖼️ Tour
+
+### The timed QR pass, CodeGate's flagship feature
+
+Every ticket is a boarding pass. The QR code is blurred with a scan line and a countdown until one hour before the event, then unlocks with **ACCESS GRANTED**.
+
+![My passes: one unlocked QR, others locked with countdowns](docs/screenshots/passes.png)
+
+### Departures board
+
+All events in an airport-style board. Hovering a row lights it up and floats that event's cover art next to the cursor.
+
+![Event list with hover preview](docs/screenshots/events-board.png)
+
+### Event page
+
+![Event detail page](docs/screenshots/event.png)
+
+<table>
+  <tr>
+    <td width="50%"><b>Resale market</b><br/>Shows each price against face value.<br/><br/><img src="docs/screenshots/resale.png" alt="Resale market"/></td>
+    <td width="50%"><b>Listing a pass for resale</b><br/>Set your price; withdraw any time.<br/><br/><img src="docs/screenshots/resell.png" alt="Resell dialog"/></td>
+  </tr>
+  <tr>
+    <td width="50%"><b>Organizer console</b><br/>Your events and quick stats.<br/><br/><img src="docs/screenshots/console.png" alt="Organizer console"/></td>
+    <td width="50%"><b>Create an event</b><br/>With a live preview card.<br/><br/><img src="docs/screenshots/create-event.png" alt="Create event form"/></td>
+  </tr>
+  <tr>
+    <td width="50%"><b>Login</b><br/>One-click demo accounts.<br/><br/><img src="docs/screenshots/login.png" alt="Login page"/></td>
+    <td width="50%" align="center"><b>Mobile</b><br/>Works on phones too.<br/><br/><img src="docs/screenshots/mobile.png" alt="Mobile home page" width="200"/></td>
+  </tr>
+</table>
+
+---
+
+## 🖱️ Cursor effects
+
+The interface reacts to your mouse:
+
+- **Custom cursor:** a glowing dot with a fading lime trail.
+- **Snapping frame:** a square frame follows the cursor and locks around buttons and links, with a label like `VIEW`, `BUY` or `SELL`.
+- **Click ripple:** clicking sends out a ripple from the cursor.
+- **Grid spotlight:** the background grid lights up wherever the cursor is.
+- **Tilt and glare:** cards and passes tilt toward the cursor with a moving highlight.
+- **Magnetic buttons:** the main buttons are pulled slightly toward the cursor.
+- **Text scramble:** headings and menu links decode from random characters.
+
+![Featured card tilting under the cursor](docs/screenshots/featured-tilt.png)
+
+> Touch devices keep the standard cursor. If someone turns on **reduced motion** in their system settings, they get the normal cursor and near-instant animations.
+
+---
+
+## 🧱 How it's built
+
+```
+CodeGate/
+├── client/                 React 19 + TypeScript + Vite
+│   └── src/
+│       ├── pages/          one file per screen (auth, home, event, passes, organizer)
+│       ├── components/     Layout, EventBoard, TicketCard, UI primitives
+│       ├── fx/             cursor + trail, grid spotlight, tilt, magnetic, scramble, cover art
+│       ├── hooks/          data fetching and mutations (TanStack Query)
+│       └── lib/            API client, types, formatting
+├── server/                 Node + Express 5 + TypeScript
+│   └── src/
+│       ├── routes/         auth, events, tickets, resale
+│       ├── db.ts           SQLite schema (better-sqlite3)
+│       └── seed.ts         demo data
+├── docs/screenshots/       the images in this README
+└── legacy/                 the original single-file React + PHP version
+```
+
+| Layer | Tech |
+|---|---|
+| UI | React 19, React Router 7, Tailwind CSS v4, Motion, Lucide icons, `qrcode.react` |
+| Data | TanStack Query (caching, refetching), a typed fetch client |
+| API | Express 5, Zod validation, JWT auth, bcrypt password hashing |
+| Storage | SQLite via `better-sqlite3` (one file, no server) |
+
+**Security:** the server identifies users from their login token, never from IDs the browser sends. Customers can only resell their own passes, only organizers can create events, and a resale purchase transfers ownership in a single database transaction.
+
+---
+
+## 🛠️ Scripts
 
 | Command | What it does |
-| --- | --- |
-| `npm run dev` | Runs the API (port 4000) and the Vite client (port 5173) with hot reload |
-| `npm run build` | Type-checks and builds both server and client |
-| `npm start` | Serves the built app and API together on port 4000 |
+|---|---|
+| `npm run dev` | Starts the API (port 4000) and the web app (port 5173) with hot reload |
+| `npm run build` | Type-checks and builds the server and the client |
+| `npm start` | Serves the built app and the API together on port 4000 |
 | `npm run seed` | Wipes the database and reloads the demo data |
 | `npm run typecheck` | Type-checks everything |
 
-Environment variables (all optional): `PORT`, `JWT_SECRET` (set this in production), `DATABASE_FILE`.
+### Running in production
 
-## Layout
-
-```
-client/   React 19 + TypeScript + Vite, Tailwind CSS v4, Motion, React Router, TanStack Query
-  src/pages/       one file per screen group (auth, home, event, tickets, organizer)
-  src/components/  shared UI (Layout, EventCard/EventBoard, TicketCard, ui primitives)
-  src/fx/          visual effects: custom cursor + trail, grid spotlight, tilt, magnetic buttons, text scramble, generative cover art
-  src/hooks/       data fetching and mutations
-  src/lib/         API client, types, formatting
-server/   Node + Express 5 + TypeScript, SQLite (better-sqlite3), JWT auth, Zod validation
-  src/routes/      auth, events, tickets + resale
-legacy/   the original single-file React app and PHP API, kept for reference
+```bash
+cp .env.example .env      # then set JWT_SECRET to a long random string
+npm run build
+npm start                 # app and API on http://localhost:4000
 ```
 
-## API
+The server won't start in production without a `JWT_SECRET`.
 
-| Method | Path | Who |
-| --- | --- | --- |
-| POST | `/api/auth/signup`, `/api/auth/login` | anyone |
-| GET | `/api/auth/me` | logged in |
-| GET | `/api/events`, `/api/events/:id` | anyone |
-| POST | `/api/events` | organizers |
-| GET / POST | `/api/tickets` | customers (own tickets only) |
-| PUT / DELETE | `/api/tickets/:id/resale` | ticket owner |
-| GET | `/api/resale` | anyone |
-| POST | `/api/resale/:id/buy` | customers |
+---
+
+## 🔌 API
+
+| Method | Path | Who can call it |
+|---|---|---|
+| `POST` | `/api/auth/signup` · `/api/auth/login` | anyone |
+| `GET` | `/api/auth/me` | logged in |
+| `GET` | `/api/events` · `/api/events/:id` | anyone |
+| `POST` | `/api/events` | organizers |
+| `GET` `POST` | `/api/tickets` | customers (their own passes) |
+| `PUT` `DELETE` | `/api/tickets/:id/resale` | the pass owner |
+| `GET` | `/api/resale` | anyone |
+| `POST` | `/api/resale/:id/buy` | customers |
+
+Logged-in requests send `Authorization: Bearer <token>`.

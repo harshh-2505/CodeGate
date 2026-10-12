@@ -3,6 +3,10 @@ import jwt from 'jsonwebtoken';
 import type { UserType } from './db.js';
 import { HttpError } from './errors.js';
 
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET must be set in production.');
+}
+// The fallback only exists so `npm run dev` works with zero setup.
 const SECRET = process.env.JWT_SECRET ?? 'dev-only-secret-change-me';
 
 export interface AuthUser {
