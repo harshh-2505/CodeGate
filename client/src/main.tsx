@@ -11,6 +11,8 @@ import { EventDetailsPage } from '@/pages/EventDetailsPage';
 import { HomePage } from '@/pages/HomePage';
 import { CreateEventPage, OrganizerDashboardPage } from '@/pages/OrganizerPages';
 import { MyTicketsPage, ResaleMarketPage } from '@/pages/TicketPages';
+import '@fontsource-variable/jetbrains-mono';
+import '@fontsource-variable/unbounded';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -18,10 +20,11 @@ const queryClient = new QueryClient({
 });
 
 const NotFound = () => (
-  <div className="py-20 text-center">
-    <h2 className="mb-4 text-4xl font-bold">Page not found</h2>
-    <Link to="/" className="text-purple-400 hover:text-purple-300">
-      Back to events
+  <div className="py-24 text-center">
+    <p className="font-display text-[9rem] leading-none font-black text-line-hi">404</p>
+    <p className="mt-4 text-xs tracking-[0.3em] text-mute">NO GATE AT THIS ADDRESS</p>
+    <Link to="/" className="mt-8 inline-block border border-line-hi px-5 py-3 text-xs tracking-[0.2em] text-ink hover:border-acid hover:text-acid">
+      RETURN TO EVENTS
     </Link>
   </div>
 );
@@ -49,7 +52,18 @@ createRoot(document.getElementById('root')!).render(
             </Route>
           </Routes>
         </BrowserRouter>
-        <Toaster theme="dark" richColors position="top-right" />
+        <Toaster
+          theme="dark"
+          position="bottom-right"
+          toastOptions={{
+            unstyled: true,
+            classNames: {
+              toast: 'cut-sm flex w-[340px] items-center gap-3 border border-line-hi bg-panel px-4 py-3 font-mono text-xs text-ink shadow-2xl',
+              success: 'border-l-4 border-l-acid',
+              error: 'border-l-4 border-l-signal',
+            },
+          }}
+        />
       </AuthProvider>
     </QueryClientProvider>
   </StrictMode>,

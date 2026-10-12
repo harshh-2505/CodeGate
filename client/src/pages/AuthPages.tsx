@@ -1,21 +1,40 @@
 import { useMutation } from '@tanstack/react-query';
+import { motion } from 'motion/react';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router';
-import { Button, Field, Input, Select } from '@/components/ui';
+import { Button, Field, Input, cx } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
+import { Scramble } from '@/fx/interactions';
 import { api } from '@/lib/api';
 import type { Session, User, UserType } from '@/lib/types';
 
 const homeFor = (user: User) => (user.type === 'organizer' ? '/dashboard' : '/');
 
-function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: ReactNode }) {
+function Terminal({ file, title, subtitle, children }: { file: string; title: string; subtitle: string; children: ReactNode }) {
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
-      <div className="w-full max-w-md rounded-2xl border border-gray-700 bg-gray-800 p-8 shadow-lg">
-        <h2 className="mb-2 text-center text-4xl font-bold text-purple-400">{title}</h2>
-        <p className="mb-8 text-center text-gray-400">{subtitle}</p>
-        {children}
-      </div>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.97 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="cut brackets w-full max-w-md border border-line-hi bg-panel/90 backdrop-blur-xl"
+      >
+        <div className="flex items-center justify-between border-b border-line px-5 py-3 text-[10px] tracking-[0.25em] text-dim">
+          <span className="flex gap-1.5">
+            <span className="size-2 bg-signal" />
+            <span className="size-2 bg-line-hi" />
+            <span className="size-2 bg-acid" />
+          </span>
+          {file}
+        </div>
+        <div className="p-8">
+          <Scramble as="h2" text={title} className="font-display text-3xl font-black uppercase" />
+          <p className="mt-2 mb-8 text-xs text-mute">
+            {subtitle}
+            <span className="ml-1 inline-block h-3 w-1.5 animate-blink bg-acid align-middle" />
+          </p>
+          {children}
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -34,6 +53,11 @@ function useSessionMutation<TArgs>(fn: (args: TArgs) => Promise<Session>) {
   });
 }
 
+const DEMO_ACCOUNTS = [
+  { label: 'Customer', email: 'customer@codegate.com' },
+  { label: 'Organizer', email: 'organizer@codegate.com' },
+];
+
 export function LoginPage() {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
@@ -48,29 +72,46 @@ export function LoginPage() {
   };
 
   return (
-    <AuthShell title="Welcome Back" subtitle="Sign in to your CODEGATE account">
-      <form onSubmit={submit} className="space-y-6">
-        <Field label="Email Address">
+    <Terminal file="auth/login.sh" title="Authenticate" subtitle="Identify yourself to pass the gate">
+      <form onSubmit={submit} className="space-y-5">
+        <Field label="Email">
           <Input type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </Field>
         <Field label="Password">
           <Input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </Field>
-        {login.error && <p className="text-center text-sm text-red-400">{login.error.message}</p>}
-        <Button type="submit" className="w-full py-3" loading={login.isPending}>
-          Login
+        {login.error && <p className="border-l-2 border-signal pl-3 text-xs text-signal">{login.error.message}</p>}
+        <Button type="submit" className="w-full py-4" loading={login.isPending} cursor="ENTER">
+          Log in →
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-gray-400">
-        Don't have an account?{' '}
-        <Link to="/signup" className="font-semibold text-purple-400 hover:text-purple-300">
-          Sign Up
+
+      <div className="mt-8 border-t border-line pt-6">
+        <p className="mb-3 text-[10px] tracking-[0.25em] text-dim">DEMO ACCESS · PASSWORD123</p>
+        <div className="grid grid-cols-2 gap-3">
+          {DEMO_ACCOUNTS.map((acct) => (
+            <button
+              key={acct.email}
+              type="button"
+              data-cursor="FILL"
+              onClick={() => {
+                setEmail(acct.email);
+                setPassword('password123');
+              }}
+              className="border border-line px-3 py-2 text-left text-[10px] tracking-[0.2em] text-mute uppercase transition-colors hover:border-acid hover:text-acid"
+            >
+              {acct.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <p className="mt-6 text-center text-xs text-mute">
+        No account?{' '}
+        <Link to="/signup" className="text-acid hover:underline">
+          Create one
         </Link>
       </p>
-      <p className="mt-4 text-center text-xs text-gray-500">
-        Demo accounts: organizer@codegate.com or customer@codegate.com, password password123.
-      </p>
-    </AuthShell>
+    </Terminal>
   );
 }
 
@@ -98,37 +139,49 @@ export function SignupPage() {
   const error = localError || signup.error?.message;
 
   return (
-    <AuthShell title="Create Account" subtitle="Join CODEGATE and start your next adventure.">
-      <form onSubmit={submit} className="space-y-4">
-        <Field label="Full Name">
+    <Terminal file="auth/register.sh" title="New identity" subtitle="Create your CodeGate account">
+      <form onSubmit={submit} className="space-y-5">
+        <div className="grid grid-cols-2 gap-px border border-line bg-line">
+          {(['customer', 'organizer'] as const).map((type) => (
+            <button
+              key={type}
+              type="button"
+              data-cursor="PICK"
+              onClick={() => setForm((f) => ({ ...f, type }))}
+              className={cx(
+                'px-3 py-3 text-[10px] tracking-[0.25em] uppercase transition-colors',
+                form.type === type ? 'bg-acid font-bold text-void' : 'bg-panel text-mute hover:text-ink',
+              )}
+            >
+              {type === 'customer' ? 'I attend' : 'I organize'}
+            </button>
+          ))}
+        </div>
+        <Field label="Full name">
           <Input placeholder="Alex Doe" value={form.name} onChange={set('name')} required />
         </Field>
-        <Field label="Email Address">
+        <Field label="Email">
           <Input type="email" placeholder="you@example.com" value={form.email} onChange={set('email')} required />
         </Field>
-        <Field label="Password">
-          <Input type="password" placeholder="Minimum 8 characters" value={form.password} onChange={set('password')} required />
-        </Field>
-        <Field label="Confirm Password">
-          <Input type="password" placeholder="••••••••" value={form.confirmPassword} onChange={set('confirmPassword')} required />
-        </Field>
-        <Field label="Account Type">
-          <Select value={form.type} onChange={set('type')}>
-            <option value="customer">Customer</option>
-            <option value="organizer">Event Organizer</option>
-          </Select>
-        </Field>
-        {error && <p className="pt-2 text-center text-sm text-red-400">{error}</p>}
-        <Button type="submit" className="mt-6 w-full py-3" loading={signup.isPending}>
-          Create Account
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Password">
+            <Input type="password" placeholder="8+ chars" value={form.password} onChange={set('password')} required />
+          </Field>
+          <Field label="Confirm">
+            <Input type="password" placeholder="••••••••" value={form.confirmPassword} onChange={set('confirmPassword')} required />
+          </Field>
+        </div>
+        {error && <p className="border-l-2 border-signal pl-3 text-xs text-signal">{error}</p>}
+        <Button type="submit" className="w-full py-4" loading={signup.isPending} cursor="JOIN">
+          Create account →
         </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-gray-400">
-        Already have an account?{' '}
-        <Link to="/login" className="font-semibold text-purple-400 hover:text-purple-300">
-          Login
+      <p className="mt-6 text-center text-xs text-mute">
+        Already registered?{' '}
+        <Link to="/login" className="text-acid hover:underline">
+          Log in
         </Link>
       </p>
-    </AuthShell>
+    </Terminal>
   );
 }

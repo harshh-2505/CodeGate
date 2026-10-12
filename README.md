@@ -33,9 +33,10 @@ Environment variables (all optional): `PORT`, `JWT_SECRET` (set this in producti
 ## Layout
 
 ```
-client/   React 19 + TypeScript + Vite, Tailwind CSS v4, React Router, TanStack Query
+client/   React 19 + TypeScript + Vite, Tailwind CSS v4, Motion, React Router, TanStack Query
   src/pages/       one file per screen group (auth, home, event, tickets, organizer)
-  src/components/  shared UI (Layout, EventCard, TicketCard, ui primitives)
+  src/components/  shared UI (Layout, EventCard/EventBoard, TicketCard, ui primitives)
+  src/fx/          visual effects: custom cursor + trail, grid spotlight, tilt, magnetic buttons, text scramble, generative cover art
   src/hooks/       data fetching and mutations
   src/lib/         API client, types, formatting
 server/   Node + Express 5 + TypeScript, SQLite (better-sqlite3), JWT auth, Zod validation
